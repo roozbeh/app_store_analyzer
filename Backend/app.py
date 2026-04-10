@@ -366,6 +366,51 @@ def get_research_status(research_id):
     return jsonify(_serialize(doc))
 
 
+@app.route("/api/researches/<research_id>/retry", methods=["POST"])
+@require_auth
+def retry_research(research_id):
+    try:
+        oid = ObjectId(research_id)
+    except Exception:
+        return jsonify({"error": "Invalid ID"}), 400
+
+    doc = researches_col().find_one({"_id": oid})
+    if not doc:
+        return jsonify({"error": "Not found"}), 404
+    if doc.get("user_id") != request.user_id:
+        return jsonify({"error": "Forbidden"}), 403
+    if doc.get("status") not in ("failed",):
+        return jsonify({"error": "Only failed researches can be retried"}), 400
+
+    keyword = doc["keyword"]
+    limit   = doc.get("limit", 10)
+    pages   = doc.get("pages", 3)
+    country = doc.get("country", "us")
+
+    researches_col().update_one({"_id": oid}, {"$set": {
+        "status": "pending",
+        "progress_message": "Retrying...",
+        "error": None,
+        "completed_at": None,
+        "apps_analyzed": 0,
+        "competitive_report": "",
+        "top_valued_features": [],
+        "common_pain_points": [],
+        "differentiation_opportunities": [],
+        "quick_wins": [],
+        "apps": [],
+    }})
+
+    thread = threading.Thread(
+        target=_run_pipeline_background,
+        args=(research_id, keyword, limit, pages, country),
+        daemon=True,
+    )
+    thread.start()
+
+    return jsonify({"id": research_id, "status": "pending"}), 202
+
+
 @app.route("/api/account", methods=["DELETE"])
 @require_auth
 def delete_account():
