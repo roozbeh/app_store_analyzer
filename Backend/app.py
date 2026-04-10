@@ -23,7 +23,7 @@ import requests
 from bson import ObjectId
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicNumbers
-from flask import Flask, jsonify, request, Response
+from flask import Flask, jsonify, request, Response, send_from_directory
 from pymongo import MongoClient, DESCENDING
 
 # ─── Configuration ────────────────────────────────────────────────────────────
@@ -145,7 +145,25 @@ def _serialize(doc: dict) -> dict:
     return doc
 
 
+# ─── Static files ─────────────────────────────────────────────────────────────
+
+STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
+
+@app.route("/favicon.ico")
+def favicon():
+    return send_from_directory(STATIC_DIR, "favicon.ico", mimetype="image/x-icon")
+
+@app.route("/apple-touch-icon.png")
+@app.route("/apple-touch-icon-precomposed.png")
+def apple_touch_icon():
+    return send_from_directory(STATIC_DIR, "apple-touch-icon.png", mimetype="image/png")
+
+
 # ─── Web pages ────────────────────────────────────────────────────────────────
+
+_FAVICON_TAGS = """
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">"""
 
 _SHARED_CSS = """
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -181,7 +199,7 @@ def marketing_page():
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>App Store Analyzer — AI Market Research</title>
+  <title>App Store Analyzer — AI Market Research</title>{_FAVICON_TAGS}
   <style>{_SHARED_CSS}
     .features {{ display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }}
     @media(max-width:560px) {{ .features {{ grid-template-columns: 1fr; }} }}
@@ -408,7 +426,7 @@ def research_page(research_id):
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{keyword} — App Store Analyzer</title>
+  <title>{keyword} — App Store Analyzer</title>{_FAVICON_TAGS}
   <style>{_SHARED_CSS}
     @media(max-width:560px) {{ .app-grid {{ grid-template-columns: 1fr !important; }} }}
   </style>
@@ -463,7 +481,7 @@ def privacy_page():
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Privacy Policy — App Store Analyzer</title>
+  <title>Privacy Policy — App Store Analyzer</title>{_FAVICON_TAGS}
   <style>{_SHARED_CSS}</style>
 </head>
 <body>
@@ -558,7 +576,7 @@ def support_page():
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Support — App Store Analyzer</title>
+  <title>Support — App Store Analyzer</title>{_FAVICON_TAGS}
   <style>{_SHARED_CSS}</style>
 </head>
 <body>
