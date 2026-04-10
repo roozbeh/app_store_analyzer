@@ -232,3 +232,99 @@ Reads `Backend/.env` for `ANTHROPIC_API_KEY`. Saves JSON + Markdown to `output/`
 | `--pages` | 3 | review pages per app (50/page, max 10) |
 | `--country` | us | App Store region code |
 | `--output` | output/ | directory for JSON + Markdown files |
+
+---
+
+## Production Server
+
+- **Host**: `ubuntu@ipronto.net`
+- **Code directory**: `/home/ubuntu/app_store_analyzer`
+- **Live URL**: `https://asa.ipronto.net`
+- **Server OS**: Ubuntu on AWS (same server as smb_marketing / home_finder)
+- **Web server**: Apache2 with reverse proxy to Docker container on port 5001
+- **Docker**: Flask runs internally on port 5000, mapped to host port 5001
+
+### Deploy
+```bash
+# From local machine (after git commit + push):
+./deploy.sh
+```
+
+### Apache config location
+```
+/etc/apache2/sites-available/asa.ipronto.net.conf
+```
+
+Full working Apache config:
+```apache
+<VirtualHost *:80>
+    ServerAdmin info@ipronto.net
+    ServerName asa.ipronto.net
+
+    ProxyPreserveHost On
+    ProxyPass /.well-known/acme-challenge/ !
+    ProxyPass / http://127.0.0.1:5001/
+    ProxyPassReverse / http://127.0.0.1:5001/
+
+    ErrorLog ${APACHE_LOG_DIR}/asa_ipronto_net-error.log
+    CustomLog ${APACHE_LOG_DIR}/asa_ipronto_net-access.log combined
+
+    RewriteEngine on
+    RewriteCond %{REQUEST_URI} !^/.well-known/acme-challenge/
+    RewriteCond %{SERVER_NAME} =asa.ipronto.net
+    RewriteRule ^ https://%{SERVER_NAME}%{REQUEST_URI} [END,NE,R=permanent]
+</VirtualHost>
+
+<IfModule mod_ssl.c>
+<VirtualHost *:443>
+    ServerAdmin info@ipronto.net
+    ServerName asa.ipronto.net
+
+    ProxyPreserveHost On
+    ProxyPass / http://127.0.0.1:5001/
+    ProxyPassReverse / http://127.0.0.1:5001/
+
+    ErrorLog ${APACHE_LOG_DIR}/asa_ipronto_net-error.log
+    CustomLog ${APACHE_LOG_DIR}/asa_ipronto_net-access.log combined
+
+    SSLCertificateFile /etc/letsencrypt/live/asa.ipronto.net/fullchain.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/asa.ipronto.net/privkey.pem
+    Include /etc/letsencrypt/options-ssl-apache.conf
+</VirtualHost>
+</IfModule>
+```
+
+Key notes:
+- `ProxyPass /.well-known/acme-challenge/ !` — prevents Apache from proxying ACME challenge to Flask (would 404)
+- Port 5001 should be firewalled from public access — all traffic goes through Apache
+
+### SSL Certificate
+- Issued via **acme.sh** (Let's Encrypt)
+- Cert stored at: `/home/ubuntu/.acme.sh/asa.ipronto.net_ecc/`
+- Installed to: `/etc/letsencrypt/live/asa.ipronto.net/`
+- Auto-renewal via cron job installed by acme.sh
+
+**To issue/renew:**
+```bash
+# On server — Apache must be running, port 80 open, /var/www/html owned by ubuntu
+sudo mkdir -p /etc/letsencrypt/live/asa.ipronto.net
+sudo chown ubuntu:ubuntu /etc/letsencrypt/live/asa.ipronto.net
+
+~/.acme.sh/acme.sh --issue -d asa.ipronto.net --webroot /var/www/html --server letsencrypt
+
+~/.acme.sh/acme.sh --install-cert -d asa.ipronto.net \
+  --cert-file /etc/letsencrypt/live/asa.ipronto.net/cert.pem \
+  --key-file /etc/letsencrypt/live/asa.ipronto.net/privkey.pem \
+  --fullchain-file /etc/letsencrypt/live/asa.ipronto.net/fullchain.pem \
+  --reloadcmd "sudo systemctl reload apache2"
+```
+
+Important acme.sh lessons (same as smb_marketing):
+- **Never use sudo** with acme.sh issue/install commands — it breaks
+- `/var/www/html` must be owned by ubuntu: `sudo chown -R ubuntu:ubuntu /var/www/html`
+- The `ProxyPass /.well-known/acme-challenge/ !` exception in Apache is required — without it acme challenge returns 404
+- Create the `/etc/letsencrypt/live/asa.ipronto.net/` directory manually before running install-cert
+
+### Docker healthcheck note
+- The healthcheck in `docker-compose.yml` uses port **5000** (internal), not 5001 (host mapping)
+- Flask inside the container always listens on 5000

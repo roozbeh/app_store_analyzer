@@ -47,7 +47,7 @@ _db = None
 def get_db():
     global _mongo_client, _db
     if _db is None:
-        _mongo_client = MongoClient(MONGO_URI)
+        _mongo_client = MongoClient(MONGO_URI, connect=False, maxPoolSize=10)
         try:
             _db = _mongo_client.get_default_database()
         except Exception:
