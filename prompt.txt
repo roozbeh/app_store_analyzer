@@ -1,0 +1,93 @@
+this is very good. Now, I want to build an app for this. I think this may need a python backend. if you agree that this can not be done only from   
+an app, let's build a hierarchy. The python code would go to Backend directory, and then we start the iOS files in the iOS directory. We can leave    
+readme and claude.md files in the current directory. The mobile app would have a UI of the previous market researchs that has been done (the app will 
+ ask for previous market researches that has been done, and show them). Then there would be a button for do a new research. The new research button   
+would need login. if user has not signed in yet, the app will ask "Sign in with Apple" button that. If they already signed in, the app will ask them  
+to write one keyword, and then communicate to backend. The backend (python code that you have written behind a flask webserver) would do the          
+research, save research result to a database (i will create a new database on MongoDB atlas for this - please give me instructions). Let's create a   
+docker backend for python codes. The iOS would have a configuration for backend URL. Please ask for all permissions upfront, so I will leave this for 
+ you, and check back few hours later  
+
+-------------
+
+When pressing "+" button, it is asking to sign in. There are several things wrong here:
+1. After sign in completed, the flow should go to "market research" creation, but it just shows the main screen, and user has to press the + button again. After sign in completed, please show the marker research creation flow
+2. There is a setting button at the top left. Please remove that. None of those settings are up to the user to change. Instead, please add a user icon, that when pressed, shows the market research has been done by the user in the past. Underneath, please add a signout and delete my account icons as well. 
+3. In the main page, we should see the list of all marker researches that has been done by all users. I am not sure if this is the current functionality or not. I guess we can confirm when we have done some market researches together
+
+
+----------- 
+
+Currently, the repot is being saves like this: 
+
+""""
+# Competitive Intelligence Report: Slideshow App Space
+
+---
+
+## 1. Top Valued Features
+
+- **Simplicity above all else** — Every high-rated app earns praise for low learning curves and clean, uncluttered interfaces. Users reward "getting out of the way."
+- **Custom music from device** — The ability to bring your own audio is a consistent delight driver across multiple apps (Alan Cushway, ZipoApps, Maple Labs).
+- **Unlimited or high-volume photo input** — Users want to import large batches without hitting arbitrary walls.
+- **Speed of creation** — Fast slideshow generation from photo selection to shareable output is praised universally; friction kills retention.
+- **Free tier with real utility** — Apps that offer meaningful functionality before hitting a paywall (Google Slides, Canva, Alan Cushway) earn significantly stronger loyalty and word-of-mouth.
+- **Template libraries** — Pre-built themes reduce creative intimidation for non-designers and accelerate time-to-publish.
+- **Mix of photos and video** — Users expect hybrid media support as a baseline, not a premium feature.
+- **Transitions and motion effects** — Ken Burns-style effects and smooth transitions are appreciated when present and reliably functional.
+
+---
+
+## 2. Common Pain Points & Gaps
+
+- **Predatory paywall timing** — The single most damaging trust pattern across the category: apps that let users complete a project, then gate the *save or export* behind a subscription. Users describe this as feeling "misled" and actively warn others in reviews (Mosaic, Rahman, Maple Labs).
+- **Subscription-only monetization with no one-time option** — Forced annual subscriptions with no monthly or one-time purchase alternative generate consistent backlash.
+- **Project data loss and crash instability** — Lost work due to crashes or failed saves is a category-wide wound. This is a baseline reliability failure that drives immediate uninstalls.
+- **Feature paywalling of formerly free capabilities** — CapCut's trajectory is a cautionary tale: locking previously free core features (audio extraction, captions, slow motion) causes intense user betrayal and active migration to competitors.
+- **Mobile/desktop feature parity gap** — Google Slides exposes a broader problem: users expect full functionality on mobile, not a degraded experience.
+- **Music flexibility limitations** — Blocking access to personal libraries (Apple Music, iTunes, Amazon Music) is a recurring frustration, especially when built-in music libraries feel generic or limited.
+- **Review-gating tactics** — ZipoApps' practice of requiring 5-star reviews to unlock features is noted by users and undermines trust in ratings authenticity.
+- **Opaque subscription cancellation** — Multiple apps make it deliberately difficult to cancel, generating negative reviews, App Store complaints, and long-term brand damage.
+- **Limited transition and timing control** — Power users consistently want granular control over slide duration, transition direction, and Ken Burns pan intensity.
+- **Social/platform export gaps** — Instagram-compatible aspect ratios, direct Facebook sharing, and Reels formatting are expected but inconsistently delivered.
+
+---
+
+## 3. Differentiation Opportunities
+
+- **Radical transparency in monetization** — Be the app that shows users exactly what's free *before* they invest time in a project. A clear, honest free tier with an obvious upgrade path is a genuine differentiator in a category full of bait-and-switch mechanics. Trust compounds over time.
+- **"No lost work" guarantee** — Auto-save, cloud backup, and crash recovery are solved engineering problems. Making reliability a *marketing promise* — and delivering on it — directly addresses the category's most emotionally damaging failure.
+- **One-time purchase option** — Offering a lifetime or one-time unlock alongside subscriptions captures a meaningful user segment that is actively fleeing subscription fatigue. No competitor is doing this well right now.
+- **Full-featured mobile experience** — Google's mobile gap is an explicit opening. An app built mobile-first with desktop-level editing depth (formatting, transitions, image insertion, layer controls) could own the space Google is abandoning.
+- **Flexible music ecosystem** — Support Apple Music, iTunes library, personal downloads, and royalty-free built-in tracks simultaneously. Music is deeply personal; locking users into a single source feels controlling and generates resentment.
+- **Social-native export defaults** — Pre-set aspect ratios for Instagram Posts, Reels, TikTok, YouTube thumbnails, and Facebook with one tap. The majority of users are creating content for these platforms; meet them where they are.
+- **Lightweight creative tool positioning** — Multiple users across Google Slides and Canva reviews describe using slideshow/presentation tools as informal Photoshop or design tool replacements. There's an underserved middle ground between "simple slideshow maker" and "full design suite."
+
+---
+
+## 4. Quick Wins
+
+1. **Show the paywall before the project starts, not after.**
+Build a clear, skimmable "Free vs. Pro" feature comparison on the creation screen or during onboarding. Include explicit callouts like *"Saving and exporting is always free."* This single change would differentiate the app from the majority of competitors and dramatically reduce 1-star reviews driven by trust violations.
+
+2. **Ship bulletproof auto-save with visible recovery.**
+Implement continuous background project saving with a visible "Project saved" indicator. Add a "Recover last session" prompt on app launch after a crash. This directly attacks the most emotionally charged pain point in the category and creates a concrete reliability story to market against competitors.
+
+3. **Build a one-tap social export panel.**
+Add a dedicated export menu with pre-configured aspect ratio presets — Instagram Square, Instagram Reel (9:16), TikTok (9:16), YouTube (16:9), Facebook (4:5) — with live preview before export. Users are already creating for these platforms; removing the resize friction is a high-value, low-complexity win.
+
+4. **Unlock custom music from device on the free tier.**
+Custom music from a user's own library is the most consistently praised feature in the category and the most consistently gated one. Making this free and easy — with a simple file picker supporting device storage, Apple Music (where licensed), and downloads folder — creates an immediate word-of-mouth advantage over apps that restrict it.
+
+5. **Add granular slide timing and transition controls.**
+Offer per-slide duration settings (e.g., 1–10 seconds), a global timing toggle, and at least 3–4 transition direction options (fade, left, right, zoom in/out). Power users are currently
+"""
+
+in the "competitive_report" column. You can keep the report there, but let's also save the breakdown in different columns:
+1. Top Valued Features: top_value_features (array of strings)
+2. Common Pain Points & Gaps: common_pain_points (array of strings)
+3. Differentiation Opportunities: differentiation_opportunities (array of strings)
+4. Quick Wins: quick_wins (array of strings)
+
+I am thinking if we break it down a bit, we can construct better UIs with it. 
+

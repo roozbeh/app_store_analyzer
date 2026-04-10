@@ -1,0 +1,53 @@
+name: AppStoreAnalyzer
+
+options:
+  bundleIdPrefix: com.ipronto
+  deploymentTarget:
+    iOS: "16.0"
+  defaultConfig: Debug
+  xcodeVersion: "15"
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    # Set your Apple Developer Team ID here (10-character string from developer.apple.com)
+    DEVELOPMENT_TEAM: ""
+
+targets:
+  AppStoreAnalyzer:
+    type: application
+    platform: iOS
+
+    sources:
+      - path: AppStoreAnalyzer
+        excludes:
+          - "**/*.md"
+
+    info:
+      path: AppStoreAnalyzer/Info.plist
+      properties:
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+
+    entitlements:
+      path: AppStoreAnalyzer/AppStoreAnalyzer.entitlements
+
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ipronto.appstoreanalyzer
+        INFOPLIST_FILE: AppStoreAnalyzer/Info.plist
+        CODE_SIGN_ENTITLEMENTS: AppStoreAnalyzer/AppStoreAnalyzer.entitlements
+        ENABLE_PREVIEWS: YES
+
+    # Sign in with Apple capability
+    capabilities:
+      - type: signInWithApple
