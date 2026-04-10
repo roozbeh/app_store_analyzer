@@ -47,6 +47,7 @@ targets:
         INFOPLIST_FILE: AppStoreAnalyzer/Info.plist
         CODE_SIGN_ENTITLEMENTS: AppStoreAnalyzer/AppStoreAnalyzer.entitlements
         ENABLE_PREVIEWS: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
 
     # Sign in with Apple capability
     capabilities:

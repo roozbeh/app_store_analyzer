@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		050A323D9EFC2AF2D675DBF5 /* ResearchListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 117CFFDB39BBB68D2FC7F8AB /* ResearchListView.swift */; };
+		121DF5F1A1017294B8155D35 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 27BB498AF712414CBDDA847E /* Assets.xcassets */; };
 		1526794C515A14533B04991D /* NewResearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEC388116DCED95B9B7DDB74 /* NewResearchView.swift */; };
 		197FF6D160BE60B054BBB6BC /* MarkdownContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB629A59BF4E9A059A3F12D2 /* MarkdownContentView.swift */; };
 		1DECE2A80161D8C3BE6213B2 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0451522E17B49898CCA46F6E /* ContentView.swift */; };
@@ -26,6 +27,7 @@
 		0451522E17B49898CCA46F6E /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		10CB7F780FEEF5D701A32520 /* Research.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Research.swift; sourceTree = "<group>"; };
 		117CFFDB39BBB68D2FC7F8AB /* ResearchListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResearchListView.swift; sourceTree = "<group>"; };
+		27BB498AF712414CBDDA847E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		45D7FA15CC1539165C5F7405 /* Config.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Config.swift; sourceTree = "<group>"; };
 		4EBC7DD69FDF5AEF23FD30B6 /* AppStoreAnalyzerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStoreAnalyzerApp.swift; sourceTree = "<group>"; };
 		82D5D159EC44D5CC2AD977AE /* AppStoreAnalyzer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AppStoreAnalyzer.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -85,6 +87,7 @@
 			isa = PBXGroup;
 			children = (
 				D87A7B9F29BF2DFFD807B01E /* AppStoreAnalyzer.entitlements */,
+				27BB498AF712414CBDDA847E /* Assets.xcassets */,
 				DF9B8B4D9A4BC37B8415542E /* Info.plist */,
 				B2C2A02937B2E22873382935 /* App */,
 				3B2539F8F013AFCAAE4E98DE /* Config */,
@@ -128,6 +131,7 @@
 			buildConfigurationList = A27DDCA04D46A1552602E3F6 /* Build configuration list for PBXNativeTarget "AppStoreAnalyzer" */;
 			buildPhases = (
 				36A6E0F7B05A46E41F73E4F6 /* Sources */,
+				3F367B56A4E99CE2E6745837 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -168,6 +172,17 @@
 		};
 /* End PBXProject section */
 
+/* Begin PBXResourcesBuildPhase section */
+		3F367B56A4E99CE2E6745837 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				121DF5F1A1017294B8155D35 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		36A6E0F7B05A46E41F73E4F6 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -198,6 +213,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = AppStoreAnalyzer/AppStoreAnalyzer.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = JKQKJJ22L7;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = AppStoreAnalyzer/Info.plist;
@@ -207,7 +223,9 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.ipronto.appstoreanalyzer;
 				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -217,6 +235,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = AppStoreAnalyzer/AppStoreAnalyzer.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = JKQKJJ22L7;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = AppStoreAnalyzer/Info.plist;
@@ -226,7 +245,9 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.ipronto.appstoreanalyzer;
 				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};

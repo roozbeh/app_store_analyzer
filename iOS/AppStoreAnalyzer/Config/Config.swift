@@ -9,7 +9,7 @@ enum Config {
             return custom.trimmingCharacters(in: .whitespacesAndNewlines)
         }
         // Default for local development. Change this before shipping.
-        return "http://localhost:5001"
+        return "https://asa.ipronto.net"
     }
 
     /// Must match APPLE_BUNDLE_ID in the backend .env and the Xcode signing settings.

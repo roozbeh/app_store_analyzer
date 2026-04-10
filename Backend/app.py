@@ -2,12 +2,20 @@
 Flask API for the App Store Analyzer.
 
 Endpoints:
-  GET  /api/health                     — health check (public)
-  POST /api/auth/apple                 — verify Apple identity token, return JWT
-  GET  /api/researches                 — list all researches, newest first (public)
-  GET  /api/researches/<id>            — full research with apps array
-  GET  /api/researches/<id>/status     — lightweight status poll
-  POST /api/researches                 — start new research (requires Bearer JWT)
+  GET    /api/health                     — health check (public)
+  POST   /api/auth/apple                 — verify Apple identity token, return JWT
+  GET    /api/researches                 — list all researches, newest first (public)
+  GET    /api/researches/<id>            — full research with apps array
+  GET    /api/researches/<id>/status     — lightweight status poll
+  POST   /api/researches                 — start new research (requires Bearer JWT)
+  POST   /api/researches/<id>/retry      — retry failed research, resume from failed stage (requires Bearer JWT)
+  DELETE /api/account                    — delete all researches for user (requires Bearer JWT)
+
+Web pages:
+  GET  /                  — marketing landing page
+  GET  /research/<id>     — shareable research result page
+  GET  /privacy           — privacy policy
+  GET  /support           — support page
 """
 
 import asyncio

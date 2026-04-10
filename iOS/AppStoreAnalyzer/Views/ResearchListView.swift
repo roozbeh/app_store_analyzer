@@ -51,6 +51,12 @@ struct ResearchListView: View {
             }
         }
         .task { await loadResearches() }
+        .task(id: researches.map(\.status).map(\.rawValue).joined()) {
+            // Auto-refresh every 3s while any research is running or pending
+            guard researches.contains(where: { !$0.status.isTerminal }) else { return }
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            await loadResearches()
+        }
     }
 
     // MARK: Sub-views
@@ -127,9 +133,18 @@ private struct NewResearchOrSignInView: View {
 struct ResearchRowView: View {
     let research: Research
 
+    private var isActive: Bool {
+        research.status == .running || research.status == .pending
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack {
+            HStack(spacing: 8) {
+                if isActive {
+                    ProgressView()
+                        .scaleEffect(0.75)
+                        .tint(.blue)
+                }
                 Text(research.keyword)
                     .font(.headline)
                 Spacer()
@@ -147,8 +162,7 @@ struct ResearchRowView: View {
             }
             .font(.caption)
 
-            if (research.status == .running || research.status == .pending),
-               let msg = research.progressMessage {
+            if isActive, let msg = research.progressMessage {
                 Text(msg)
                     .font(.caption2)
                     .foregroundStyle(.blue)

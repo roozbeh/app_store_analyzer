@@ -82,6 +82,11 @@ class APIService: ObservableObject {
         )
     }
 
+    func retryResearch(id: String, token: String) async throws {
+        struct StatusResponse: Decodable { let id: String; let status: String }
+        let _: StatusResponse = try await request("/api/researches/\(id)/retry", method: "POST", token: token)
+    }
+
     func deleteAccount(token: String) async throws {
         struct MessageResponse: Decodable { let message: String }
         let _: MessageResponse = try await request("/api/account", method: "DELETE", token: token)

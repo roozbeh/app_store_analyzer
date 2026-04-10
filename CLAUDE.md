@@ -23,7 +23,10 @@ Backend/
   src/
     app_store_client.py   iTunes Search API + RSS review fetcher
     analyzer.py           Claude API calls: per-app analysis + competitive report
-  requirements.txt        flask, pymongo, PyJWT, cryptography, requests, gunicorn
+  requirements.txt        flask, pymongo, PyJWT, cryptography, requests, gunicorn, Pillow
+  static/
+    favicon.ico           pre-generated multi-size ICO from AppIcon.jpeg (do not resize at request time)
+    apple-touch-icon.png  pre-generated 180×180 PNG
   Dockerfile
   docker-compose.yml      exposes port 5001 (5000 is taken by macOS AirPlay)
   .env.example            template — copy to .env and fill in secrets
@@ -101,9 +104,44 @@ python main.py --keywords "habit tracker" --limit 10 --pages 3
 | GET | `/api/researches/<id>` | — | Full research including apps array |
 | GET | `/api/researches/<id>/status` | — | Lightweight status poll |
 | POST | `/api/researches` | Bearer JWT | Start new research (runs in background thread) |
+| POST | `/api/researches/<id>/retry` | Bearer JWT | Retry failed research (resumes from failed stage, skips already-done apps) |
 | DELETE | `/api/account` | Bearer JWT | Delete all researches for the user |
 
 Protected endpoints expect `Authorization: Bearer <token>` header.
+
+---
+
+## Web Pages (Flask-served HTML)
+
+| Path | Description |
+|------|-------------|
+| `/` | Marketing landing page |
+| `/research/<id>` | Shareable research result page with insight cards |
+| `/privacy` | Privacy policy (required for App Store) |
+| `/support` | Support page (required for App Store) |
+| `/favicon.ico` | Served from `Backend/static/favicon.ico` |
+| `/apple-touch-icon.png` | Served from `Backend/static/apple-touch-icon.png` |
+
+### Static files
+- `Backend/static/favicon.ico` — pre-generated multi-size ICO (16/32/48/64/128px) from `AppIcon.jpeg` using Pillow
+- `Backend/static/apple-touch-icon.png` — pre-generated 180×180 PNG
+
+To regenerate from a new `AppIcon.jpeg`:
+```bash
+python3 - << 'EOF'
+from PIL import Image, os
+img = Image.open("AppIcon.jpeg").convert("RGBA")
+sizes = [(16,16),(32,32),(48,48),(64,64),(128,128)]
+icons = [img.resize(s, Image.LANCZOS) for s in sizes]
+icons[0].save("Backend/static/favicon.ico", format="ICO", sizes=sizes, append_images=icons[1:])
+img.resize((180,180), Image.LANCZOS).save("Backend/static/apple-touch-icon.png", format="PNG")
+EOF
+```
+
+### Shared HTML helpers in app.py
+- `_FAVICON_TAGS` — `<link>` tags for favicon + apple-touch-icon, inserted in every page `<head>`
+- `_SHARED_CSS` — shared CSS for all web pages
+- `_resolve_insight_array(key, doc)` — resolves insight arrays from MongoDB doc: native field → JSON parse → partial extraction (handles truncated JSON)
 
 ---
 
@@ -134,6 +172,29 @@ Five-stage async pipeline in `Backend/src/`:
 - Required Claude headers: `x-api-key`, `anthropic-version: 2023-06-01`, `Content-Type: application/json`
 - JSON from Claude responses: strip markdown fences before `json.loads()`
 - Background research pipeline runs in a `threading.Thread` (daemon); `asyncio.run()` inside the thread creates a fresh event loop — this is intentional and correct
+- `generate_competitive_report` uses `max_tokens=4096` — previously 2500 caused truncated JSON stored in `competitive_report` field
+- Each app is saved to MongoDB incrementally via `$push` as soon as it finishes — not all-at-once at the end
+- Retry endpoint (`POST /api/researches/<id>/retry`): reads existing `apps` array, passes their `app_id` set as `skip_app_ids` to `_run_pipeline_background`, resets `competitive_report` / insight arrays so they get regenerated
+
+### Threading / gunicorn fix (critical)
+When deploying with gunicorn, OS thread limits can be exhausted by PyMongo monitor threads + gunicorn workers. Fix:
+1. `docker-compose.yml` — add `ulimits` and `security_opt`:
+```yaml
+ulimits:
+  nproc: 65535
+  nofile:
+    soft: 65535
+    hard: 65535
+security_opt:
+  - seccomp=unconfined
+```
+2. `MongoClient` — use `connect=False, maxPoolSize=10` to prevent eager thread creation on startup
+
+### Truncated JSON handling
+Claude sometimes returns incomplete JSON (hit token limit). Both the backend and iOS app handle this:
+- **Backend** (`app.py:_resolve_insight_array`): tries native field → `json.loads()` → character-by-character partial extraction
+- **iOS** (`ResearchDetailView.swift:resolveArray`/`extractStringsFromTruncatedJSON`): same three-step resolution
+- Increasing `max_tokens` to 4096 prevents truncation on new runs; partial extraction handles legacy records
 
 ---
 
@@ -175,11 +236,18 @@ Collection: `researches`
 - `Config.backendURL` — reads `UserDefaults["backend_url"]` first, falls back to `http://localhost:5001`
 
 ### Key UX flows
-1. **Main screen** (`ResearchListView`) — public list of ALL users' researches, pull-to-refresh
+1. **Main screen** (`ResearchListView`) — public list of ALL users' researches, pull-to-refresh; shows inline spinner + progress message for active researches; auto-refreshes every 3s while any research is active
 2. **Tap "+"** → if not signed in: shows `SignInView` (Sign in with Apple); after sign-in, `NewResearchOrSignInView` automatically switches to `NewResearchView` without dismissing the sheet
 3. **New Research** — keyword input, limit/pages/country steppers, calls `POST /api/researches`
-4. **Detail view** (`ResearchDetailView`) — polls every 3s while status is non-terminal; shows 4 structured insight cards (features/pain points/opportunities/quick wins) for new researches, falls back to Markdown for legacy ones; app cards have "App Store" link that opens the store URL
-5. **Person icon** (top-left) → `UserProfileView` — user's own past researches, Sign Out, Delete Account
+4. **Detail view** (`ResearchDetailView`) — always fetches full detail on load (list endpoint omits `apps` array); polls every 3s while status is non-terminal; shows 4 structured insight cards (features/pain points/opportunities/quick wins); falls back to "Insights not available" message for legacy records; share button in toolbar links to `https://asa.ipronto.net/research/<id>`
+5. **Retry button** — shown in detail view header when status is `failed`; calls `POST /api/researches/<id>/retry`; polls until done
+6. **Person icon** (top-left) → `UserProfileView` — user's own past researches, Sign Out, Delete Account
+
+### Important iOS detail view bug (fixed)
+The `.task` modifier originally had `guard !current.status.isTerminal` before fetching full detail — this caused completed researches to never load the `apps` array. Fixed: always fetch full detail first, then conditionally start polling.
+
+### Config.swift
+Default `backendURL` is `https://asa.ipronto.net` (production). Can be overridden via Settings app (`UserDefaults["backend_url"]`).
 
 ### Sign in with Apple
 - Works on **real device only** — simulator always fails with `AuthorizationError 1000` (Apple limitation)
@@ -328,3 +396,27 @@ Important acme.sh lessons (same as smb_marketing):
 ### Docker healthcheck note
 - The healthcheck in `docker-compose.yml` uses port **5000** (internal), not 5001 (host mapping)
 - Flask inside the container always listens on 5000
+
+---
+
+## App Store (iOS)
+
+- **Bundle ID**: `com.ipronto.appstoreanalyzer`
+- **App Store ID**: `6745741527`
+- **App Store URL**: `https://apps.apple.com/app/id6745741527`
+- **Privacy policy URL**: `https://asa.ipronto.net/privacy`
+- **Support URL**: `https://asa.ipronto.net/support`
+
+### App icon
+- Source: `AppIcon.jpeg` (1024×1024) in repo root and `iOS/AppStoreAnalyzer/Assets.xcassets/AppIcon.appiconset/`
+- Asset catalog: `iOS/AppStoreAnalyzer/Assets.xcassets/AppIcon.appiconset/Contents.json`
+- `project.yml` sets `ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon`
+
+### XcodeGen project structure
+```
+iOS/AppStoreAnalyzer/Assets.xcassets/
+  Contents.json
+  AppIcon.appiconset/
+    Contents.json
+    AppIcon.jpeg        ← 1024×1024 source
+```
