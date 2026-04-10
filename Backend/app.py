@@ -238,6 +238,146 @@ def marketing_page():
     return Response(html, mimetype="text/html")
 
 
+@app.route("/research/<research_id>")
+def research_page(research_id):
+    try:
+        oid = ObjectId(research_id)
+    except Exception:
+        return Response("<h1>Invalid research ID</h1>", status=400, mimetype="text/html")
+
+    doc = researches_col().find_one({"_id": oid})
+    if not doc:
+        return Response("<h1>Research not found</h1>", status=404, mimetype="text/html")
+
+    keyword   = doc.get("keyword", "")
+    status    = doc.get("status", "")
+    apps_n    = doc.get("apps_analyzed", 0)
+    created   = doc.get("created_at")
+    date_str  = created.strftime("%B %d, %Y") if hasattr(created, "strftime") else str(created)[:10]
+
+    top_features  = doc.get("top_valued_features", []) or []
+    pain_points   = doc.get("common_pain_points", []) or []
+    opportunities = doc.get("differentiation_opportunities", []) or []
+    quick_wins    = doc.get("quick_wins", []) or []
+    apps          = doc.get("apps", []) or []
+
+    def list_items(items, color):
+        if not items:
+            return "<p style='color:#6e6e73'>No data available.</p>"
+        rows = ""
+        for i, item in enumerate(items, 1):
+            rows += f"""<div style='display:flex;gap:12px;padding:10px 0;{"border-top:1px solid #f0f0f5" if i>1 else ""}'>
+              <span style='min-width:22px;height:22px;border-radius:50%;background:{color}22;color:{color};
+                font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center'>{i}</span>
+              <span style='color:#3a3a3c;font-size:.93rem;line-height:1.5'>{item}</span></div>"""
+        return rows
+
+    def section(title, icon, color, items):
+        return f"""<div style='background:#fff;border-radius:14px;margin-bottom:16px;overflow:hidden;
+                               box-shadow:0 1px 4px rgba(0,0,0,.07)'>
+          <div style='background:{color}18;padding:12px 20px;display:flex;align-items:center;gap:8px'>
+            <span style='font-size:1rem'>{icon}</span>
+            <span style='font-weight:700;font-size:.9rem;color:{color}'>{title}</span>
+            <span style='margin-left:auto;background:{color}22;color:{color};border-radius:20px;
+              padding:1px 9px;font-size:.75rem;font-weight:700'>{len(items)}</span>
+          </div>
+          <div style='padding:0 20px 8px'>{list_items(items, color)}</div>
+        </div>"""
+
+    def app_card(a):
+        name     = a.get("name", "")
+        dev      = a.get("developer", "")
+        rating   = a.get("rating", 0)
+        rcount   = a.get("rating_count", 0)
+        price    = a.get("price", "Free")
+        icon_url = a.get("icon_url", "")
+        url      = a.get("url", "")
+        praised  = a.get("praised_features", [])
+        missing  = a.get("missing_features", [])
+        summary  = a.get("sentiment_summary", "")
+        stars    = "★" * int(round(rating)) + "☆" * (5 - int(round(rating)))
+        rcount_fmt = f"{rcount/1000:.0f}K" if rcount >= 1000 else str(rcount)
+
+        praised_html = "".join(f"<li>{f}</li>" for f in praised[:5])
+        missing_html = "".join(f"<li>{f}</li>" for f in missing[:5])
+
+        return f"""<div style='background:#fff;border-radius:14px;padding:16px 20px;margin-bottom:12px;
+                               box-shadow:0 1px 4px rgba(0,0,0,.07)'>
+          <div style='display:flex;gap:14px;align-items:flex-start'>
+            {"<img src='" + icon_url + "' style='width:52px;height:52px;border-radius:12px;flex-shrink:0' />" if icon_url else ""}
+            <div style='flex:1;min-width:0'>
+              <div style='font-weight:700;font-size:.95rem'>{name}</div>
+              <div style='color:#6e6e73;font-size:.8rem'>{dev}</div>
+              <div style='color:#f59e0b;font-size:.8rem'>{stars} <span style='color:#6e6e73'>({rcount_fmt})</span></div>
+            </div>
+            <div style='display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0'>
+              <span style='background:#eff6ff;color:#0071e3;border-radius:20px;padding:2px 10px;font-size:.75rem;font-weight:600'>{price}</span>
+              {"<a href='" + url + "' style='font-size:.75rem;color:#0071e3'>App Store ↗</a>" if url else ""}
+            </div>
+          </div>
+          {f"<p style='color:#6e6e73;font-size:.83rem;margin-top:10px;font-style:italic'>{summary}</p>" if summary else ""}
+          <div style='display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px'>
+            {"<div><div style='font-size:.78rem;font-weight:600;color:#16a34a;margin-bottom:4px'>❤ Users Love</div><ul style='font-size:.8rem;color:#3a3a3c;padding-left:16px;margin:0'>" + praised_html + "</ul></div>" if praised else ""}
+            {"<div><div style='font-size:.78rem;font-weight:600;color:#ea580c;margin-bottom:4px'>⚠ Users Want</div><ul style='font-size:.8rem;color:#3a3a3c;padding-left:16px;margin:0'>" + missing_html + "</ul></div>" if missing else ""}
+          </div>
+        </div>"""
+
+    status_color = {"completed": "#16a34a", "failed": "#dc2626",
+                    "running": "#0071e3", "pending": "#d97706"}.get(status, "#6e6e73")
+
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{keyword} — App Store Analyzer</title>
+  <style>{_SHARED_CSS}
+    @media(max-width:560px) {{ .app-grid {{ grid-template-columns: 1fr !important; }} }}
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1><a href="/" style="color:inherit;text-decoration:none">App Store Analyzer</a></h1>
+      <span>Market Research Report</span>
+    </div>
+  </header>
+  <div class="container">
+
+    <!-- Title -->
+    <div style='display:flex;align-items:center;gap:14px;margin-bottom:6px'>
+      <h2 style='font-size:1.8rem;margin:0'>{keyword}</h2>
+      <span style='background:{status_color}18;color:{status_color};border-radius:20px;
+        padding:3px 12px;font-size:.8rem;font-weight:700;text-transform:capitalize'>{status}</span>
+    </div>
+    <p style='color:#6e6e73;font-size:.88rem;margin-bottom:28px'>
+      {apps_n} apps analyzed &nbsp;·&nbsp; {date_str}
+    </p>
+
+    <!-- Insight sections -->
+    {section("Top Valued Features", "⭐", "#d97706", top_features)}
+    {section("Common Pain Points", "🔥", "#dc2626", pain_points)}
+    {section("Differentiation Opportunities", "💡", "#0071e3", opportunities)}
+    {section("Quick Wins", "⚡", "#16a34a", quick_wins)}
+
+    <!-- App analyses -->
+    {"<h2 style='margin:28px 0 14px'>App Analyses</h2>" + "".join(app_card(a) for a in apps) if apps else ""}
+
+    <!-- Share -->
+    <div style='text-align:center;margin-top:32px;padding:20px;background:#fff;border-radius:14px;
+                box-shadow:0 1px 4px rgba(0,0,0,.07)'>
+      <p style='color:#6e6e73;font-size:.88rem;margin-bottom:10px'>Created with App Store Analyzer</p>
+      <a href="/" style='display:inline-block;background:#0071e3;color:#fff;padding:10px 24px;
+         border-radius:10px;font-weight:600;text-decoration:none;font-size:.9rem'>Try it yourself →</a>
+    </div>
+
+    <footer>&copy; 2025 iPronto &nbsp;·&nbsp; <a href="/support">Support</a></footer>
+  </div>
+</body>
+</html>"""
+    return Response(html, mimetype="text/html")
+
+
 @app.route("/support")
 def support_page():
     html = f"""<!DOCTYPE html>
@@ -387,23 +527,27 @@ def retry_research(research_id):
     pages   = doc.get("pages", 3)
     country = doc.get("country", "us")
 
+    # Preserve apps that were already successfully analyzed — resume from where we left off
+    existing_apps = doc.get("apps", [])
+    skip_app_ids  = {a["app_id"] for a in existing_apps}
+
     researches_col().update_one({"_id": oid}, {"$set": {
         "status": "pending",
-        "progress_message": "Retrying...",
+        "progress_message": f"Resuming… {len(existing_apps)} apps already done.",
         "error": None,
         "completed_at": None,
-        "apps_analyzed": 0,
+        # Keep: apps, apps_analyzed (already correct from previous run)
         "competitive_report": "",
         "top_valued_features": [],
         "common_pain_points": [],
         "differentiation_opportunities": [],
         "quick_wins": [],
-        "apps": [],
     }})
 
     thread = threading.Thread(
         target=_run_pipeline_background,
         args=(research_id, keyword, limit, pages, country),
+        kwargs={"skip_app_ids": skip_app_ids},
         daemon=True,
     )
     thread.start()
@@ -469,15 +613,18 @@ def _update(research_id: str, status: str, message: str, extra: dict = None):
 
 
 def _run_pipeline_background(
-    research_id: str, keyword: str, limit: int, pages: int, country: str
+    research_id: str, keyword: str, limit: int, pages: int, country: str,
+    skip_app_ids: set = None,
 ):
     """Run the full research pipeline in a background thread, updating MongoDB throughout."""
     try:
-        # Ensure API key is available in this thread's environment
         if ANTHROPIC_API_KEY:
             os.environ["ANTHROPIC_API_KEY"] = ANTHROPIC_API_KEY
 
-        results = asyncio.run(_async_pipeline(research_id, keyword, limit, pages, country))
+        results = asyncio.run(
+            _async_pipeline(research_id, keyword, limit, pages, country,
+                            skip_app_ids=skip_app_ids or set())
+        )
 
         _update(
             research_id,
@@ -485,13 +632,12 @@ def _run_pipeline_background(
             "Research complete!",
             {
                 "completed_at": datetime.now(timezone.utc),
-                "apps_analyzed": results["apps_analyzed"],
                 "competitive_report": results["competitive_report"],
                 "top_valued_features": results["top_valued_features"],
                 "common_pain_points": results["common_pain_points"],
                 "differentiation_opportunities": results["differentiation_opportunities"],
                 "quick_wins": results["quick_wins"],
-                "apps": results["apps"],
+                # apps + apps_analyzed are written incrementally — do not overwrite here
             },
         )
     except Exception as e:
@@ -504,7 +650,8 @@ def _run_pipeline_background(
 
 
 async def _async_pipeline(
-    research_id: str, keyword: str, limit: int, pages: int, country: str
+    research_id: str, keyword: str, limit: int, pages: int, country: str,
+    skip_app_ids: set = None,
 ) -> dict:
     from src.app_store_client import AppStoreClient
     from src.analyzer import (
@@ -514,28 +661,82 @@ async def _async_pipeline(
         generate_competitive_report,
     )
 
+    skip_app_ids = skip_app_ids or set()
+    col = researches_col()
+    oid = ObjectId(research_id)
+
     client = AppStoreClient(country=country, delay=0.4)
 
     # Step 1 — search
     _update(research_id, "running", f"Searching App Store for '{keyword}'...")
     apps = await client.search_apps(keyword, limit=limit)
 
-    # Step 2 — fetch reviews
-    _update(research_id, "running", f"Fetching reviews for {len(apps)} apps...")
-    for app in apps:
+    # Step 2 — fetch reviews (only for apps we haven't analyzed yet)
+    new_apps = [a for a in apps if a.app_id not in skip_app_ids]
+    _update(research_id, "running", f"Fetching reviews for {len(new_apps)} apps...")
+    for app in new_apps:
         app.reviews = await client.fetch_reviews(app, max_pages=pages)
 
-    # Step 3 — AI analysis
-    all_analyses = []
-    for i, app in enumerate(apps):
-        _update(research_id, "running", f"Analyzing app {i + 1}/{len(apps)}: {app.name}")
-        analysis_data = await analyze_reviews_with_claude(
-            app_name=app.name,
-            app_id=app.app_id,
-            reviews=app.reviews,
-        )
-        market = estimate_market_metrics(app.rating_count, app.category, app.price)
+    # Step 3 — AI analysis per app, with per-app retry and incremental MongoDB save
+    # Load already-saved analyses from MongoDB (from a previous partial run)
+    existing_doc = col.find_one({"_id": oid}, {"apps": 1, "apps_analyzed": 1}) or {}
+    existing_apps_data = existing_doc.get("apps", [])
+    apps_analyzed_count = len(existing_apps_data)
+
+    # Rebuild AppAnalysis objects for already-done apps so they feed the report
+    all_analyses: list[AppAnalysis] = []
+    for saved in existing_apps_data:
         all_analyses.append(AppAnalysis(
+            app_id=saved["app_id"],
+            app_name=saved["name"],
+            developer=saved.get("developer", ""),
+            rating=saved.get("rating", 0.0),
+            rating_count=saved.get("rating_count", 0),
+            price=saved.get("price", "Free"),
+            category=saved.get("category", ""),
+            url=saved.get("url", ""),
+            icon_url=saved.get("icon_url", ""),
+            review_count_analyzed=saved.get("reviews_analyzed", 0),
+            praised_features=saved.get("praised_features", []),
+            missing_features=saved.get("missing_features", []),
+            sentiment_summary=saved.get("sentiment_summary", ""),
+            competitive_notes=saved.get("competitive_notes", ""),
+            estimated_downloads=saved.get("estimated_downloads", 0),
+            estimated_mau=saved.get("estimated_mau", 0),
+            revenue_low=saved.get("revenue_low", 0.0),
+            revenue_mid=saved.get("revenue_mid", 0.0),
+            revenue_high=saved.get("revenue_high", 0.0),
+            monetization_note=saved.get("monetization_note", ""),
+        ))
+
+    total_apps = len(apps)
+    for i, app in enumerate(new_apps):
+        _update(research_id, "running",
+                f"Analyzing app {apps_analyzed_count + 1}/{total_apps}: {app.name}")
+
+        # Retry the Claude analysis up to 3 times before graceful degradation
+        analysis_data = None
+        for attempt in range(3):
+            try:
+                analysis_data = await analyze_reviews_with_claude(
+                    app_name=app.name,
+                    app_id=app.app_id,
+                    reviews=app.reviews,
+                )
+                break
+            except Exception as exc:
+                if attempt < 2:
+                    await asyncio.sleep(2 ** attempt * 3)   # 3s, 6s
+                else:
+                    analysis_data = {
+                        "praised_features": [],
+                        "missing_features": [],
+                        "sentiment_summary": f"Analysis unavailable after 3 attempts: {exc}",
+                        "competitive_notes": "",
+                    }
+
+        market = estimate_market_metrics(app.rating_count, app.category, app.price)
+        analysis = AppAnalysis(
             app_id=app.app_id,
             app_name=app.name,
             developer=app.developer,
@@ -551,46 +752,59 @@ async def _async_pipeline(
             sentiment_summary=analysis_data.get("sentiment_summary", ""),
             competitive_notes=analysis_data.get("competitive_notes", ""),
             **market,
-        ))
+        )
+        all_analyses.append(analysis)
+        apps_analyzed_count += 1
 
-    # Step 4 — competitive report
-    _update(research_id, "running", "Generating competitive intelligence report...")
-    report = await generate_competitive_report(keyword, all_analyses)
-
-    apps_data = [
-        {
-            "app_id": a.app_id,
-            "name": a.app_name,
-            "developer": a.developer,
-            "rating": a.rating,
-            "rating_count": a.rating_count,
-            "price": a.price,
-            "category": a.category,
-            "url": a.url,
-            "icon_url": a.icon_url,
-            "reviews_analyzed": a.review_count_analyzed,
-            "praised_features": a.praised_features,
-            "missing_features": a.missing_features,
-            "sentiment_summary": a.sentiment_summary,
-            "competitive_notes": a.competitive_notes,
-            "estimated_downloads": a.estimated_downloads,
-            "estimated_mau": a.estimated_mau,
-            "revenue_low": a.revenue_low,
-            "revenue_mid": a.revenue_mid,
-            "revenue_high": a.revenue_high,
-            "monetization_note": a.monetization_note,
+        # Persist this app immediately so a later failure doesn't lose the work
+        app_data = {
+            "app_id": analysis.app_id,
+            "name": analysis.app_name,
+            "developer": analysis.developer,
+            "rating": analysis.rating,
+            "rating_count": analysis.rating_count,
+            "price": analysis.price,
+            "category": analysis.category,
+            "url": analysis.url,
+            "icon_url": analysis.icon_url,
+            "reviews_analyzed": analysis.review_count_analyzed,
+            "praised_features": analysis.praised_features,
+            "missing_features": analysis.missing_features,
+            "sentiment_summary": analysis.sentiment_summary,
+            "competitive_notes": analysis.competitive_notes,
+            "estimated_downloads": analysis.estimated_downloads,
+            "estimated_mau": analysis.estimated_mau,
+            "revenue_low": analysis.revenue_low,
+            "revenue_mid": analysis.revenue_mid,
+            "revenue_high": analysis.revenue_high,
+            "monetization_note": analysis.monetization_note,
         }
-        for a in all_analyses
-    ]
+        col.update_one({"_id": oid}, {
+            "$push": {"apps": app_data},
+            "$set": {"apps_analyzed": apps_analyzed_count},
+        })
+
+    # Step 4 — competitive report (retry up to 3 times)
+    _update(research_id, "running", "Generating competitive intelligence report...")
+    report = None
+    for attempt in range(3):
+        try:
+            report = await generate_competitive_report(keyword, all_analyses)
+            break
+        except Exception as exc:
+            if attempt < 2:
+                await asyncio.sleep(2 ** attempt * 3)
+            else:
+                raise RuntimeError(
+                    f"Competitive report failed after 3 attempts: {exc}"
+                ) from exc
 
     return {
-        "apps_analyzed": len(all_analyses),
         "competitive_report": report["competitive_report"],
         "top_valued_features": report["top_valued_features"],
         "common_pain_points": report["common_pain_points"],
         "differentiation_opportunities": report["differentiation_opportunities"],
         "quick_wins": report["quick_wins"],
-        "apps": apps_data,
     }
 
 

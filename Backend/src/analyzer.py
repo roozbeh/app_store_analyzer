@@ -107,8 +107,10 @@ CLAUDE_API_URL = "https://api.anthropic.com/v1/messages"
 CLAUDE_MODEL = "claude-sonnet-4-6"
 
 
-def _call_claude(prompt: str, max_tokens: int = 1000) -> str:
-    """Synchronous call to the Anthropic API using urllib."""
+def _call_claude(prompt: str, max_tokens: int = 1000, max_attempts: int = 3) -> str:
+    """Synchronous call to the Anthropic API with retry on transient failures."""
+    import time
+
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
     if not api_key:
         raise RuntimeError("ANTHROPIC_API_KEY environment variable is not set.")
@@ -119,29 +121,41 @@ def _call_claude(prompt: str, max_tokens: int = 1000) -> str:
         "messages": [{"role": "user", "content": prompt}],
     }).encode("utf-8")
 
-    req = urllib.request.Request(
-        CLAUDE_API_URL,
-        data=payload,
-        headers={
-            "Content-Type": "application/json",
-            "x-api-key": api_key,
-            "anthropic-version": "2023-06-01",
-        },
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=60) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            text = ""
-            for block in data.get("content", []):
-                if block.get("type") == "text":
-                    text += block["text"]
-            return text.strip()
-    except urllib.error.HTTPError as e:
-        body = e.read().decode("utf-8", errors="replace")
-        raise RuntimeError(f"Claude API error {e.code}: {body}") from e
-    except Exception as e:
-        raise RuntimeError(f"Claude API call failed: {e}") from e
+    last_error: Exception = RuntimeError("No attempts made")
+    for attempt in range(max_attempts):
+        req = urllib.request.Request(
+            CLAUDE_API_URL,
+            data=payload,
+            headers={
+                "Content-Type": "application/json",
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+            },
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=90) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                text = ""
+                for block in data.get("content", []):
+                    if block.get("type") == "text":
+                        text += block["text"]
+                return text.strip()
+        except urllib.error.HTTPError as e:
+            body = e.read().decode("utf-8", errors="replace")
+            last_error = RuntimeError(f"Claude API error {e.code}: {body}")
+            # Retry on rate-limit / overload; fail fast on auth / bad request
+            if e.code in (429, 500, 529) and attempt < max_attempts - 1:
+                time.sleep(5 * (2 ** attempt))   # 5s, 10s
+                continue
+            raise last_error from e
+        except Exception as e:
+            last_error = RuntimeError(f"Claude API call failed: {e}")
+            if attempt < max_attempts - 1:
+                time.sleep(2 ** attempt)          # 1s, 2s
+            continue
+
+    raise last_error
 
 
 async def analyze_reviews_with_claude(
