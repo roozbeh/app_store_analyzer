@@ -238,6 +238,84 @@ def marketing_page():
     return Response(html, mimetype="text/html")
 
 
+def _resolve_insight_array(key: str, doc: dict) -> list:
+    """
+    Return the insight array for `key`, falling back to:
+    1. Standard JSON parse of competitive_report
+    2. Partial string extraction for truncated JSON (hit token limit)
+    """
+    native = doc.get(key) or []
+    if native:
+        return native
+
+    report = (doc.get("competitive_report") or "").strip()
+    if not report.startswith("{"):
+        return []
+
+    # Try standard JSON parse first
+    try:
+        parsed = json.loads(report)
+        items = parsed.get(key) or []
+        if items:
+            return items
+    except Exception:
+        pass
+
+    # Partial extraction — handles truncated JSON
+    try:
+        search = f'"{key}":'
+        idx = report.find(search)
+        if idx == -1:
+            return []
+        rest = report[idx + len(search):].lstrip()
+        if not rest.startswith("["):
+            return []
+        rest = rest[1:]  # skip '['
+
+        items = []
+        while rest:
+            rest = rest.lstrip()
+            if not rest or rest[0] in ("]", "}"):
+                break
+            if rest[0] == ",":
+                rest = rest[1:]
+                continue
+            if rest[0] != '"':
+                break
+            rest = rest[1:]  # skip opening quote
+
+            item_chars = []
+            escaped = False
+            closed = False
+            i = 0
+            while i < len(rest):
+                ch = rest[i]
+                if escaped:
+                    mapping = {"n": "\n", "t": "\t", "r": "\r", '"': '"', "\\": "\\"}
+                    item_chars.append(mapping.get(ch, ch))
+                    escaped = False
+                elif ch == "\\":
+                    escaped = True
+                elif ch == '"':
+                    closed = True
+                    i += 1
+                    break
+                else:
+                    item_chars.append(ch)
+                i += 1
+
+            rest = rest[i:]
+            item = "".join(item_chars)
+            if item:
+                items.append(item)
+            if not closed:
+                break  # truncated mid-string
+
+        return items
+    except Exception:
+        return []
+
+
 @app.route("/research/<research_id>")
 def research_page(research_id):
     try:
@@ -255,10 +333,10 @@ def research_page(research_id):
     created   = doc.get("created_at")
     date_str  = created.strftime("%B %d, %Y") if hasattr(created, "strftime") else str(created)[:10]
 
-    top_features  = doc.get("top_valued_features", []) or []
-    pain_points   = doc.get("common_pain_points", []) or []
-    opportunities = doc.get("differentiation_opportunities", []) or []
-    quick_wins    = doc.get("quick_wins", []) or []
+    top_features  = _resolve_insight_array("top_valued_features",           doc)
+    pain_points   = _resolve_insight_array("common_pain_points",            doc)
+    opportunities = _resolve_insight_array("differentiation_opportunities", doc)
+    quick_wins    = _resolve_insight_array("quick_wins",                    doc)
     apps          = doc.get("apps", []) or []
 
     def list_items(items, color):
