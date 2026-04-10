@@ -271,13 +271,21 @@ Rules:
 
     try:
         result = json.loads(text)
-        # Ensure all expected keys exist
+        top_valued = result.get("top_valued_features", [])
+        pain_points = result.get("common_pain_points", [])
+        opportunities = result.get("differentiation_opportunities", [])
+        quick_wins = result.get("quick_wins", [])
+
+        # If Claude omitted the markdown report, generate it from the arrays
+        competitive_report = result.get("competitive_report") or _build_markdown_report(
+            top_valued, pain_points, opportunities, quick_wins
+        )
         return {
-            "competitive_report": result.get("competitive_report", raw),
-            "top_valued_features": result.get("top_valued_features", []),
-            "common_pain_points": result.get("common_pain_points", []),
-            "differentiation_opportunities": result.get("differentiation_opportunities", []),
-            "quick_wins": result.get("quick_wins", []),
+            "competitive_report": competitive_report,
+            "top_valued_features": top_valued,
+            "common_pain_points": pain_points,
+            "differentiation_opportunities": opportunities,
+            "quick_wins": quick_wins,
         }
     except Exception:
         # Fallback: treat the whole response as the markdown report
@@ -288,3 +296,18 @@ Rules:
             "differentiation_opportunities": [],
             "quick_wins": [],
         }
+
+
+def _build_markdown_report(
+    top_valued: list, pain_points: list, opportunities: list, quick_wins: list
+) -> str:
+    sections = ["# Competitive Intelligence Report"]
+    if top_valued:
+        sections.append("## Top Valued Features\n" + "\n".join(f"- {x}" for x in top_valued))
+    if pain_points:
+        sections.append("## Common Pain Points\n" + "\n".join(f"- {x}" for x in pain_points))
+    if opportunities:
+        sections.append("## Differentiation Opportunities\n" + "\n".join(f"- {x}" for x in opportunities))
+    if quick_wins:
+        sections.append("## Quick Wins\n" + "\n".join(f"- {x}" for x in quick_wins))
+    return "\n\n".join(sections)
