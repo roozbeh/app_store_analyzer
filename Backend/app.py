@@ -456,6 +456,101 @@ def research_page(research_id):
     return Response(html, mimetype="text/html")
 
 
+@app.route("/privacy")
+def privacy_page():
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy Policy — App Store Analyzer</title>
+  <style>{_SHARED_CSS}</style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>App Store Analyzer</h1>
+      <span><a href="/">Home</a> &rsaquo; Privacy Policy</span>
+    </div>
+  </header>
+  <div class="container">
+    <div class="hero">
+      <h2>Privacy Policy</h2>
+      <p>Effective date: April 10, 2025 &nbsp;·&nbsp; iPronto</p>
+    </div>
+
+    <div class="card">
+      <h2>Overview</h2>
+      <p>App Store Analyzer ("the app") is a market research tool that analyzes publicly available App Store reviews using AI. We take your privacy seriously and collect only what is strictly necessary to operate the service.</p>
+    </div>
+
+    <div class="card">
+      <h2>Information We Collect</h2>
+
+      <h3>Sign in with Apple</h3>
+      <p>When you sign in, Apple provides us with a unique user identifier (your Apple ID "sub" claim). We do not receive your name or email address unless you explicitly choose to share them. This identifier is used solely to associate your researches with your account.</p>
+
+      <h3>Research data</h3>
+      <p>When you create a research, we store the keyword you searched, the results of the analysis, and your Apple user identifier so you can manage your own researches. <strong>Researches are visible to all users of the app and via shareable links.</strong> Do not include sensitive or confidential keywords.</p>
+
+      <h3>App Store review data</h3>
+      <p>The app fetches publicly available App Store reviews from Apple's RSS feeds and iTunes Search API. This data is processed by Anthropic's Claude AI to generate competitive insights. We do not store raw review text — only the AI-generated summaries.</p>
+
+      <h3>Usage data</h3>
+      <p>We do not use any third-party analytics SDKs or advertising frameworks. Standard server access logs (IP address, request path, timestamp) are retained for up to 30 days for security and debugging purposes only.</p>
+    </div>
+
+    <div class="card">
+      <h2>How We Use Your Information</h2>
+      <ul>
+        <li>To authenticate you and associate researches with your account</li>
+        <li>To run the market research pipeline on your behalf</li>
+        <li>To display your researches and allow you to delete them</li>
+        <li>To maintain the security and reliability of the service</li>
+      </ul>
+      <p style="margin-top:12px">We do not sell, rent, or share your personal information with third parties for marketing purposes.</p>
+    </div>
+
+    <div class="card">
+      <h2>Third-Party Services</h2>
+      <h3>Anthropic (Claude AI)</h3>
+      <p>App Store review text is sent to Anthropic's API to generate analysis summaries. Anthropic's <a href="https://www.anthropic.com/legal/privacy" target="_blank">Privacy Policy</a> applies to data processed by their API.</p>
+
+      <h3>Apple (App Store / Sign in with Apple)</h3>
+      <p>App Store data is fetched from Apple's public APIs. Authentication is handled by Apple's Sign in with Apple service. Apple's <a href="https://www.apple.com/legal/privacy/" target="_blank">Privacy Policy</a> applies.</p>
+
+      <h3>MongoDB Atlas</h3>
+      <p>Research data is stored in MongoDB Atlas (cloud database hosted on AWS). MongoDB's <a href="https://www.mongodb.com/legal/privacy-policy" target="_blank">Privacy Policy</a> applies.</p>
+    </div>
+
+    <div class="card">
+      <h2>Data Retention &amp; Deletion</h2>
+      <p>Your researches are stored until you delete them. You can delete all your data at any time from within the app: tap the person icon → <strong>Delete Account</strong>. This permanently removes all researches associated with your Apple ID.</p>
+      <p>To request deletion by email, contact us at <a href="mailto:info@ipronto.net">info@ipronto.net</a> with the subject line "Data Deletion Request".</p>
+    </div>
+
+    <div class="card">
+      <h2>Children's Privacy</h2>
+      <p>App Store Analyzer is not directed at children under 13. We do not knowingly collect personal information from children under 13.</p>
+    </div>
+
+    <div class="card">
+      <h2>Changes to This Policy</h2>
+      <p>We may update this policy from time to time. The effective date at the top of this page will be updated accordingly. Continued use of the app after changes constitutes acceptance of the updated policy.</p>
+    </div>
+
+    <div class="card">
+      <h2>Contact</h2>
+      <p>Questions about this privacy policy? Contact us at <a href="mailto:info@ipronto.net">info@ipronto.net</a>.</p>
+    </div>
+
+    <footer>&copy; 2025 iPronto &nbsp;·&nbsp; <a href="/">Home</a> &nbsp;·&nbsp; <a href="/support">Support</a></footer>
+  </div>
+</body>
+</html>"""
+    return Response(html, mimetype="text/html")
+
+
 @app.route("/support")
 def support_page():
     html = f"""<!DOCTYPE html>
