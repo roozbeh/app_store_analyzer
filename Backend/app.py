@@ -23,7 +23,7 @@ import requests
 from bson import ObjectId
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicNumbers
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, Response
 from pymongo import MongoClient, DESCENDING
 
 # ─── Configuration ────────────────────────────────────────────────────────────
@@ -143,6 +143,160 @@ def _serialize(doc: dict) -> dict:
         if isinstance(doc.get(key), datetime):
             doc[key] = doc[key].isoformat()
     return doc
+
+
+# ─── Web pages ────────────────────────────────────────────────────────────────
+
+_SHARED_CSS = """
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+         background: #f5f5f7; color: #1d1d1f; line-height: 1.6; }
+  header { background: #fff; border-bottom: 1px solid #e0e0e5; padding: 18px 24px;
+           display: flex; align-items: center; gap: 14px; }
+  header h1 { font-size: 1.15rem; font-weight: 700; }
+  header span { font-size: .85rem; color: #6e6e73; }
+  .container { max-width: 760px; margin: 40px auto; padding: 0 24px 60px; }
+  h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 1rem; font-weight: 600; margin: 22px 0 6px; }
+  p  { color: #3a3a3c; margin-bottom: 12px; }
+  .hero { background: linear-gradient(135deg, #0071e3 0%, #34aadc 100%);
+          color: #fff; border-radius: 18px; padding: 40px 36px; margin-bottom: 36px; }
+  .hero p { color: rgba(255,255,255,.85); font-size: 1.05rem; margin-top: 10px; }
+  .card { background: #fff; border-radius: 14px; padding: 24px 28px;
+          margin-bottom: 18px; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+  .badge { display: inline-block; background: #0071e3; color: #fff;
+           border-radius: 6px; padding: 2px 10px; font-size: .78rem;
+           font-weight: 600; margin-bottom: 8px; }
+  ul { padding-left: 20px; color: #3a3a3c; }
+  li { margin-bottom: 6px; }
+  a  { color: #0071e3; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  footer { text-align: center; font-size: .8rem; color: #6e6e73; margin-top: 40px; }
+"""
+
+@app.route("/")
+def marketing_page():
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>App Store Analyzer — AI Market Research</title>
+  <style>{_SHARED_CSS}
+    .features {{ display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }}
+    @media(max-width:560px) {{ .features {{ grid-template-columns: 1fr; }} }}
+    .feature {{ background:#fff; border-radius:14px; padding:20px 22px;
+                box-shadow:0 1px 4px rgba(0,0,0,.07); }}
+    .feature .icon {{ font-size:1.6rem; margin-bottom:8px; }}
+    .feature h3 {{ margin:0 0 4px; font-size:.95rem; }}
+    .feature p {{ font-size:.85rem; color:#6e6e73; margin:0; }}
+    .cta {{ display:inline-block; background:#0071e3; color:#fff; padding:14px 28px;
+            border-radius:10px; font-weight:600; font-size:1rem; margin-top:8px; }}
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>App Store Analyzer</h1>
+      <span>AI-Powered Competitive Intelligence</span>
+    </div>
+  </header>
+  <div class="container">
+    <div class="hero">
+      <h2>Know your market before you build.</h2>
+      <p>Enter a keyword. Get instant AI analysis of real App Store reviews across your competition — top features users love, pain points they hate, and the gaps nobody has filled yet.</p>
+      <a class="cta" href="https://apps.apple.com/app/id6745741527">Download on the App Store</a>
+    </div>
+
+    <h2>What you get</h2>
+    <div class="features">
+      <div class="feature"><div class="icon">⭐</div><h3>Top Valued Features</h3><p>What users consistently praise across competing apps in your category.</p></div>
+      <div class="feature"><div class="icon">🔥</div><h3>Common Pain Points</h3><p>Frustrations users keep complaining about — your opportunity to do better.</p></div>
+      <div class="feature"><div class="icon">💡</div><h3>Differentiation Opportunities</h3><p>Gaps in the market that no competitor has solved yet.</p></div>
+      <div class="feature"><div class="icon">⚡</div><h3>Quick Wins</h3><p>The highest-impact improvements to ship first, based on real review data.</p></div>
+    </div>
+
+    <div class="card" style="margin-top:28px;">
+      <h2>How it works</h2>
+      <h3>1. Enter a keyword</h3><p>Search any App Store category — "habit tracker", "invoice app", "meditation".</p>
+      <h3>2. AI reads the reviews</h3><p>Claude AI analyzes hundreds of real user reviews across the top competing apps.</p>
+      <h3>3. Get your report</h3><p>Receive a structured competitive intelligence report with per-app breakdowns and market size estimates.</p>
+    </div>
+
+    <div class="card">
+      <span class="badge">Built for</span>
+      <h2>Indie devs &amp; product teams</h2>
+      <p>Stop spending days on manual App Store research. App Store Analyzer delivers the insight that used to take hours — in minutes. No guesswork, no surveys. Just real data from real users.</p>
+    </div>
+
+    <footer>
+      &copy; 2025 iPronto &nbsp;·&nbsp; <a href="/support">Support</a> &nbsp;·&nbsp; <a href="https://apps.apple.com/app/id6745741527">App Store</a>
+    </footer>
+  </div>
+</body>
+</html>"""
+    return Response(html, mimetype="text/html")
+
+
+@app.route("/support")
+def support_page():
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Support — App Store Analyzer</title>
+  <style>{_SHARED_CSS}</style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>App Store Analyzer</h1>
+      <span><a href="/">Home</a> &rsaquo; Support</span>
+    </div>
+  </header>
+  <div class="container">
+    <div class="hero">
+      <h2>Support</h2>
+      <p>We're here to help. Reach us at <a href="mailto:info@ipronto.net" style="color:#fff;font-weight:600;">info@ipronto.net</a> and we'll get back to you within one business day.</p>
+    </div>
+
+    <div class="card">
+      <h2>Frequently Asked Questions</h2>
+
+      <h3>How do I start a new research?</h3>
+      <p>Tap the <strong>+</strong> button on the main screen. You'll be prompted to sign in with Apple if you haven't already, then enter a keyword and configure the search parameters.</p>
+
+      <h3>Why does analysis take a few minutes?</h3>
+      <p>The app fetches hundreds of real App Store reviews across multiple apps, then sends them to Claude AI for analysis. Depending on how many apps and review pages you've requested, this typically takes 2–5 minutes.</p>
+
+      <h3>Can I see other people's researches?</h3>
+      <p>Yes — the main screen shows all researches from all users, newest first. This lets the community learn from each other's market analysis.</p>
+
+      <h3>What does "Sign in with Apple" give me?</h3>
+      <p>Signing in lets you create new researches and access your own history via the profile icon. It requires a real device (not a simulator) and an iCloud-connected Apple ID.</p>
+
+      <h3>How is market size estimated?</h3>
+      <p>Downloads are estimated as rating count × 100 (roughly 1% of users rate an app). Monthly active users are estimated at 25% of downloads. Revenue is estimated using industry ARPU benchmarks by App Store category. These are approximations for planning purposes, not official figures.</p>
+
+      <h3>How do I delete my account?</h3>
+      <p>Sign in, tap the person icon (top-left), scroll to the bottom, and tap <strong>Delete Account</strong>. This permanently removes all researches you created.</p>
+
+      <h3>Can I change the backend URL?</h3>
+      <p>Yes. Go to iPhone Settings → App Store Analyzer → Backend URL. This is intended for developers running the backend locally.</p>
+    </div>
+
+    <div class="card">
+      <h2>Contact</h2>
+      <p>Email: <a href="mailto:info@ipronto.net">info@ipronto.net</a></p>
+      <p>For bug reports, please include your iOS version, the keyword you searched, and a description of what happened.</p>
+    </div>
+
+    <footer>&copy; 2025 iPronto &nbsp;·&nbsp; <a href="/">Home</a></footer>
+  </div>
+</body>
+</html>"""
+    return Response(html, mimetype="text/html")
 
 
 # ─── Routes ───────────────────────────────────────────────────────────────────

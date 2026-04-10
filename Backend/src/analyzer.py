@@ -259,7 +259,7 @@ Rules:
 - The competitive_report value is the full Markdown report — keep it sharp and actionable.
 - Return only the JSON object, nothing else."""
 
-    raw = await asyncio.to_thread(_call_claude, prompt, 2500)
+    raw = await asyncio.to_thread(_call_claude, prompt, 4096)
 
     # Strip markdown fences if present
     text = raw.strip()
