@@ -213,7 +213,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = AppStoreAnalyzer/AppStoreAnalyzer.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = JKQKJJ22L7;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = AppStoreAnalyzer/Info.plist;
@@ -235,7 +235,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = AppStoreAnalyzer/AppStoreAnalyzer.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = JKQKJJ22L7;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = AppStoreAnalyzer/Info.plist;

@@ -50,12 +50,12 @@ struct ResearchListView: View {
                 UserProfileView(allResearches: researches)
             }
         }
-        .task { await loadResearches() }
-        .task(id: researches.map(\.status).map(\.rawValue).joined()) {
-            // Auto-refresh every 3s while any research is running or pending
-            guard researches.contains(where: { !$0.status.isTerminal }) else { return }
-            try? await Task.sleep(nanoseconds: 3_000_000_000)
+        .task {
             await loadResearches()
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                await loadResearches()
+            }
         }
     }
 
