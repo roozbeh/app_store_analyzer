@@ -118,7 +118,7 @@ def _make_token(user_id: str) -> str:
     payload = {
         "sub": user_id,
         "iat": datetime.now(timezone.utc),
-        "exp": datetime.now(timezone.utc) + timedelta(days=30),
+        "exp": datetime.now(timezone.utc) + timedelta(days=365),
     }
     return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
 

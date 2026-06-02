@@ -101,6 +101,14 @@ struct NewResearchView: View {
                     country: country
                 )
                 dismiss()
+            } catch let apiErr as APIError {
+                if case .serverError(401, _) = apiErr {
+                    authService.signOut()
+                    dismiss()
+                } else {
+                    self.error = apiErr.localizedDescription
+                    isSubmitting = false
+                }
             } catch {
                 self.error = error.localizedDescription
                 isSubmitting = false
